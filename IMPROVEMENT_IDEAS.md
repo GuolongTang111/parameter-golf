@@ -299,3 +299,53 @@ The binding constraint analysis suggests:
 - **Parameter budget** (16MB) is the primary bottleneck — any technique that improves compression or reduces parameter count per quality unit is high-value
 - **Training time** (10 min) is secondary — we complete ~7400 steps which is sufficient for convergence
 - **Eval time** (10 min) is significantly underutilized — current eval takes ~90s, leaving 8+ minutes for test-time training or ensemble methods
+
+---
+
+## 9. Insights from Web Research (External Sources)
+
+### 9.1 Looped / Recursive Transformers (HIGH PRIORITY - Untried)
+Reuse L unique layers k times for effective depth L*k at L layers of parameter cost. Recent work shows:
+- **Loop(L x k)** achieves comparable accuracy to full-depth models at **25-55% of parameter cost** (ICLR 2026)
+- **Relaxed Recursive Transformers** (DeepMind): Add layer-specific LoRA modules to shared blocks; 13.5% accuracy improvement
+- **Not yet explored in any Parameter Golf submission**
+- Could allow effective 20-layer depth with 10 layers of parameters
+
+### 9.2 BitNet b1.58 Ternary Training (SPECULATIVE)
+Microsoft's ternary weight {-1, 0, +1} training achieves comparable performance at same parameter count. "BitNet b1.58 Reloaded" demonstrated this works on small networks (100K-48M params) using median-based quantization. At ~1.58 bits/param vs current ~5-6 bits, this could allow 3-4x more parameters in 16MB. Unproven in this regime.
+
+### 9.3 CRVQ (Channel-Relaxed Vector Quantization)
+Reduces perplexity by 39% over AQLM with only 0.06-bit overhead by reordering critical weight channels and using extended codebooks. Could outperform current per-row scalar quantization.
+
+### 9.4 Turbo-Muon Optimizer
+Achieves 2.8x per-layer speedup via spectral preconditioning of the Newton-Schulz step. Could save wall-clock time, allowing more training steps in 10 minutes.
+
+### 9.5 Gluon Optimizer Framework (ICML 2025)
+Unifies Muon and Scion with convergence guarantees. Theoretical stepsizes match empirical fine-tuned values — could reduce hyperparameter search time.
+
+### 9.6 Byte Latent Transformer / ByteFlow Net
+- **Byte Latent Transformer** (ACL 2025): Dynamically segments input into variable-length byte patches guided by entropy. Matches Llama 3 at scale.
+- **ByteFlow Net** (March 2026): Tokenizer-free, learns self-tokenization from raw bytes. Outperforms BPE models.
+- Could eliminate embedding table entirely, but requires significant architecture changes.
+
+### 9.7 TTT Research Updates
+- **TLM (ICML 2025)**: 20%+ improvement via perplexity minimization with LoRA and high-perplexity sample selection
+- **TTT-E2E (NVIDIA, Jan 2026)**: End-to-end TTT that scales with context length
+- Current SOTA (1.1428) does NOT use TTT — combining SOTA arch + TTT is low-hanging fruit
+
+### 9.8 EMA vs SWA (Feb 2025 Research)
+Recent paper shows ~1% of training budget is optimal EMA averaging window. "Early Weight Averaging meets High Learning Rates" (LAWA) outperforms standard SWA with spaced checkpoints, especially with high learning rates.
+
+### 9.9 NanoGPT Speedrunning Transferable Techniques
+Record dropped from 45 min to 2.86 min. Most techniques already adopted, but **TokenMonster tokenizer** (vocabulary optimization) has not been explored in Parameter Golf.
+
+### Sources
+- [ICLR 2026 Looped Transformers](https://openreview.net/pdf/183334103d5fda67d365e08fec721accd09b8ec8.pdf)
+- [BitNet b1.58 Reloaded](https://arxiv.org/html/2407.09527v1)
+- [CRVQ](https://arxiv.org/html/2412.09282)
+- [Turbo-Muon](https://arxiv.org/pdf/2512.04632)
+- [Gluon](https://arxiv.org/abs/2505.13416)
+- [ByteFlow Net](https://arxiv.org/html/2603.03583)
+- [TLM TTT](https://arxiv.org/abs/2505.20633)
+- [EMA research](https://arxiv.org/pdf/2502.06761)
+- [NanoGPT Speedrun](https://github.com/KellerJordan/modded-nanogpt)
